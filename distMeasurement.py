@@ -31,7 +31,3 @@ def main(file_name):
         finally:
             send_socket.close()
             recv_socket.close()
-
-
-if __name__ == "__main__":
-    main('google.com')
