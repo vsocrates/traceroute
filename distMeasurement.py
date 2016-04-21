@@ -7,9 +7,11 @@ import select
 import time 
 import sys
 import csv 
+import traceback 
+
 
 def main():
-    initialData = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas vehicula, magna sed ullamcorper pulvinar, velit risus aliquet elit, at rhoncus arcu ipsum id felis. Nam laoreet id mauris eu porttitor. Proin et justo a nunc commodo mollis nec quis quam. Quisque mattis turpis a magna finibus, vel euismod enim sollicitudin. Curabitur dapibus rhoncus orci vel mollis. Vivamus aliquet mattis neque sit amet interdum. Praesent placerat, tellus vitae blandit lacinia, purus nisl vulputate nulla, a vulputate nibh sapien eu dui. Vestibulum sed tincidunt elit. Pellentesque sodales enim tortor, vel semper erat ultricies in. Aliquam vulputate feugiat facilisis. Morbi cursus ante quis ex scelerisque suscipit. Nulla fermentum lacus nec urna fringilla tincidunt. Aenean a iaculis nisl. In vitae tristique orci. Donec lacinia est consequat, dapibus lectus nec, mollis ante. Nullam mi odio, pulvinar in massa nec, lacinia ultrices sem. In bibendum ut tortor non posuere. Aliquam tincidunt lorem nec lorem pulvinar, et pharetra sapien tempor. Phasellus sodales enim hendrerit, pharetra tellus nec, auctor enim. Morbi lobortis justo sed nulla consectetur, id porta dui porttitor. Etiam eleifend arcu in consequat tincidunt. Nulla sit amet congue dui, fringilla blandit leo. Curabitur pulvinar purus eu dignissim aliquet. In eget quam et arcu rhoncus suscipit ut sit amet nibh. Donec et magna sed urna consectetur ultrices. Donec arcu lacus, fermentum eu leo et, laoreet ultricies diam. Done1"
+    initialData = "Gastropub forage chillwave, farm-to-table locavore scenester mumblecore chia. Master cleanse truffaut lumbersexual brunch. Hashtag mlkshk twee, flexitarian four dollar toast narwhal kogi. Farm-to-table tilde pork belly, slow-carb lumbersexual cliche hoodie shoreditch whatever hella. Bicycle rights iPhone try-hard, paleo vice yuccie flexitarian heirloom skateboard cold-pressed kombucha tofu whatever. +1 before they sold out post-ironic, affogato austin jean shorts echo park actually heirloom bicycle rights drinking vinegar. Photo booth actually mlkshk listicle. Kitsch raw denim semiotics slow-carb DIY, chia hashtag artisan literally forage messenger bag kinfolk. Venmo chillwave fingerstache, williamsburg knausgaard butcher flannel pinterest paleo +1 gochujang. Raw denim affogato marfa ethical freegan, celiac fanny pack church-key hashtag mixtape blue bottle pabst flannel. Wayfarers cardigan paleo, kombucha drinking vinegar celiac trust fund helvetica. Affogato tattooed hella mlkshk knausgaard, meh kickstarter shoreditch celiac migas austin cronut. Portland occupy thundercats yr pug tattooed before they sold out, paleo fap gastropub dreamcatcher wayfarers vice. Keffiyeh skateboard pabst, pop-up semiotics you probably haven't heard of them church-key artisan.Ethical photo booth shoreditch, blue bottle tattooed everyday carry schlitz yr +1 blog scenester thundercats. Cliche flexitarian man bun, disrupt kombucha pabst bicycle rights. Mumblecore synth twee, Done"
 
     with open('targets.txt') as f:
         content = f.readlines()
@@ -23,14 +25,14 @@ def main():
     ttl = 32
     ipAdd = 0;
     tryCount = 1;
-    
+    csv_count = 0;
+    residualTTL = 0
+
     f = open('output.csv', 'w')
     try:
         writer = csv.writer(f)
-        writer.writerow( ('Hops', 'RTT') )
+        writer.writerow( ('IP Address' , 'Hops', 'RTT', 'GeoDistance') )
         while ipAdd < (len(content)):
-          print '\n'
-          print '%i' % ipAdd
           recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
           send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, udp)
           send_socket.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
@@ -59,7 +61,7 @@ def main():
               t1 = time.time()
               totalTime = round((t1 - t0) * 1000, 3)
               print("The time elapsed was: " + str(totalTime) + " ms")
-              TTL, protocol, src_ip, dest_ip = parseIPHeader(returnData,28)
+              TTL, protocol, src_ip_string, dest_ip_string  = parseIPHeader(returnData,28)
 
               IPHeaderLength(returnData,0)
               icmp_type, icmp_code = ICMPHeader(returnData, 20)
@@ -67,13 +69,21 @@ def main():
               ipAdd = ipAdd + 1
 
               if icmp_type == 3 & icmp_code == 3:
-                  writer.writerow( (TTL, totalTime) )
-
+                  residualTTL = 32 - TTL
+                  writer.writerow( (dest_ip_string,residualTTL, totalTime) )
+                  csv_count += 1
+                  if csv_count > 9:
+                      break
+              
+              print '\n'   
+            
+            
           except socket.error:
               if tryCount > 2:
                   tryCount = 1
                   print("Gave up after 3 tries")
                   ipAdd = ipAdd + 1
+                  print '\n'
                   continue
               else:
                   tryCount = tryCount + 1
@@ -84,15 +94,15 @@ def main():
               recv_socket.close()
     except:
         print("Oh no!")
+        traceback.print_exc()
     finally:
         f.close()    
 def IPHeaderLength(byte_array,initialMark):
     stringRegex = "!xxH"
 
     datagramLength = struct.unpack(stringRegex, byte_array[initialMark:initialMark + 4])
-    print("The total length is: %i" % datagramLength)
+    print("The total length is: %i" % datagramLength[0])
     print("The original length was: %i" % (datagramLength[0] - 28))
-
 
 def parseIPHeader(byte_array, initialMark):
     stringRegex = "!xxxxxxxxBBxx4s4s"
@@ -103,7 +113,7 @@ def parseIPHeader(byte_array, initialMark):
     dest_ip_string = socket.inet_ntoa(dest_ip)
     print("The source IP is: " + src_ip_string)
     print("The destination IP is: " + dest_ip_string)
-    return TTL, protocol, src_ip, dest_ip
+    return TTL, protocol, src_ip_string, dest_ip_string
 
 def ICMPHeader(byte_array, initialMark):
     stringRegex = "!BBxx"
