@@ -24,10 +24,10 @@ def main():
     ipAdd = 0;
     tryCount = 1;
     
-    f = open('output.csv', 'wt')
+    f = open('output.csv', 'w')
     try:
         writer = csv.writer(f)
-        writerwriter( ('Hops', 'RTT') )
+        writer.writerow( ('Hops', 'RTT') )
         while ipAdd < (len(content)):
           print '\n'
           print '%i' % ipAdd
@@ -66,7 +66,7 @@ def main():
 
               ipAdd = ipAdd + 1
 
-              if icmp_type == 3 %& icmp_code == 3:
+              if icmp_type == 3 & icmp_code == 3:
                   writer.writerow( (TTL, totalTime) )
 
           except socket.error:
@@ -83,7 +83,7 @@ def main():
               send_socket.close()
               recv_socket.close()
     except:
-        pass
+        print("Oh no!")
     finally:
         f.close()    
 def IPHeaderLength(byte_array,initialMark):
