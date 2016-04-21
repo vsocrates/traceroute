@@ -28,8 +28,7 @@ def main():
     try:
         writer = csv.writer(f)
         writerwriter( ('Hops', 'RTT') )
-
-      while ipAdd < (len(content)):
+        while ipAdd < (len(content)):
           print '\n'
           print '%i' % ipAdd
           recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
@@ -83,9 +82,13 @@ def main():
           finally:
               send_socket.close()
               recv_socket.close()
-            
+    except:
+        pass
+    finally:
+        f.close()    
 def IPHeaderLength(byte_array,initialMark):
     stringRegex = "!xxH"
+
     datagramLength = struct.unpack(stringRegex, byte_array[initialMark:initialMark + 4])
     print("The total length is: %i" % datagramLength)
     print("The original length was: %i" % (datagramLength[0] - 28))
